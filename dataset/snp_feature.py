@@ -2,6 +2,7 @@ import os
 import torch
 import torch.utils.data as data
 import pandas as pd
+import numpy as np
 import random
 from torchvision import transforms
 from sklearn.preprocessing import LabelEncoder
@@ -26,7 +27,7 @@ class SNPFeature(data.Dataset):
 
     def __getitem__(self, index):
         sample = {}
-        sample['SNP'] = torch.from_numpy(self.X[index])
+        sample['SNP'] = torch.tensor(self.X[index], dtype=torch.float)
         sample['hap1'] = self.GT1[index]
         sample['hap2'] = self.GT2[index]
 
@@ -45,6 +46,8 @@ def KFoldTrainDataLoader(train_file, batch_size, k = 5):
     # extract inputs and targets
     df = pd.read_csv(train_file, sep = '\t')
     X = df.iloc[:, :-2].values # SNP features
+    X = np.resize(X, (X.shape[0], 3000))# raw resize, make the frame work.
+    X = X.reshape(-1,1,3000) # Used to be X.shape[1]
     y1 = df.iloc [:, -2].values # hap1
     y2 = df.iloc [:, -1].values # hap2
     # encode the the targets

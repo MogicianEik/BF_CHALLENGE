@@ -30,6 +30,9 @@ class Trainer(object):
         
         # get outputs
         h1, h2 = model.forward(snps)
+        print(h1.shape)
+        print(hap1s.shape)
+        exit()
         loss = min(self.criterion(h1, hap1s) + self.criterion(h2, hap2s), self.criterion(h1, hap2s) + self.criterion(h2, hap1s))
         loss.backward()
         self.optimizer.step()

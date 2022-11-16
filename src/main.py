@@ -11,14 +11,16 @@ sys.path.append(parentdir)
 import numpy as np
 import torch
 import torch.nn as nn
+import time
 from tqdm import tqdm
-from models.unet import unet
+from models.unet_1d import UNET_1D
 from dataset.snp_feature import KFoldTrainDataLoader
 from tensorboardX import SummaryWriter
 from option import Options
 from utils.lr_scheduler import LR_Scheduler
 from utils.trainer import Trainer
 from utils.evaluator import Evaluator
+from torchsummary import summary
 
 args = Options().parse()
 n_class = args.n_class
@@ -44,12 +46,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if not evaluation:
     dataloaders_train, dataloaders_val, label_encoder_name_mapping = KFoldTrainDataLoader(args.train_file, batch_size, kfold)
     print("Mapping of Label Encoded Classes", label_encoder_name_mapping, sep="\n")
+    start_time = time.time()
     for rotation in range(kfold):
         print("creating models, rotation %s"%rotation)
-        
+                
         num_epochs = args.num_epochs
         learning_rate = args.lr
-        model = unet(out_classes=n_class, dimensions=2, monte_carlo_dropout=0.15).cuda()
+        model = UNET_1D(n_class,1,128,7,3).cuda() #(input_dim, hidden_layer, kernel_size, depth)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
         scheduler = LR_Scheduler('poly', learning_rate, num_epochs, len(dataloaders_train[rotation]))
         criterion = nn.CrossEntropyLoss()
@@ -89,9 +92,9 @@ if not evaluation:
                             print("saving model...")
                             torch.save(model.state_dict(), model_path + task_name + ".pth")
 
-
+                    elapsed_time = time.time() - start_time 
                     log = ""
-                    log = log + 'epoch [{}/{}] loss: train = {:.4f}, val = {:.4f}'.format(epoch+1, num_epochs, train_loss, val_loss) + "\n"
+                    log = log + 'epoch [{}/{}] loss: train = {:.4f}, val = {:.4f}, time={:.2f}s'.format(epoch+1, num_epochs, train_loss, val_loss, elapsed_time) + "\n"
                     log += "================================\n"
                     print(log)
 
