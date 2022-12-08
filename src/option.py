@@ -9,6 +9,7 @@ class Options():
         parser.add_argument('--n_class', type=int, default=3, help='classification classes')
         parser.add_argument('--train_file', type=str, default='data/train.txt', help='path to train data')
         parser.add_argument('--eval_file', type=str, default='data/val.txt', help='path to evaluation data')
+        parser.add_argument('--label_file', type=str, default='data/labels.yaml', help='path to labels for the evaluation')
         parser.add_argument('--model_path', type=str, help='path to trained model')
         parser.add_argument('--log_path', type=str, help='path to log files')
         parser.add_argument('--task_name', type=str, help='task name for naming saved model files and log files')

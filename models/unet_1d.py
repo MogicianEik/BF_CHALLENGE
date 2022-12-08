@@ -81,7 +81,14 @@ class UNET_1D(nn.Module):
         self.upsample = nn.Upsample(scale_factor=5, mode='nearest')
         self.upsample1 = nn.Upsample(scale_factor=5, mode='nearest')
         
-        self.outcov = nn.Conv1d(self.layer_n, self.n_class, kernel_size=self.kernel_size, stride=1,padding = 3)
+        # decoder 1 classifier
+        self.outcov = nn.Conv1d(self.layer_n, self.layer_n, kernel_size=self.kernel_size, stride=1,padding = 3)
+        self.avgpool = nn.AdaptiveAvgPool1d(1)
+        self.fc = nn.Linear(self.layer_n, self.n_class, bias=True)
+        
+        # decoder 2 classifier
+        self.fc2 = nn.Linear(self.layer_n * 3500, self.n_class, bias=True)
+        self.softmax = nn.Softmax(dim=1)
     
         
     def down_layer(self, input_layer, out_layer, kernel, stride, depth):
@@ -123,6 +130,10 @@ class UNET_1D(nn.Module):
         up1 = self.cbr_up3(up1)
         
         out1 = self.outcov(up1)
+        out1 = self.avgpool(out1)
+        out1 = out1.view(out1.shape[0], -1)
+        out1 = self.fc(out1)
+        
         
         #############Decoder 2####################
         
@@ -139,5 +150,9 @@ class UNET_1D(nn.Module):
         up2 = self.cbr_up3(up2)
         
         out2 = self.outcov(up2)
+        out2 = torch.flatten(out2, start_dim=1)
+        out2 = self.fc2(out2)
+        out2 = self.softmax(out2)
         
-        return out1, out2
+        
+        return out1 , out2

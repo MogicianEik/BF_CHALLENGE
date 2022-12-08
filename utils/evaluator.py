@@ -10,18 +10,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torchvision import transforms
+from utils.metrics import ConfusionMatrix
 import os
 
 torch.backends.cudnn.deterministic = True
 
 class Evaluator(object):
-    def __init__(self, criterion, test=False):
+    def __init__(self, n_class, criterion = None,test=False):
         self.criterion = criterion
         self.test = test
+        self.metrics = ConfusionMatrix(n_class)
     
     def get_scores(self):
-        score_train = self.metrics.get_scores()
-        return score_train
+        score_val = self.metrics.get_scores()
+        return score_val
 
     def reset_metrics(self):
         self.metrics.reset()
@@ -40,7 +42,8 @@ class Evaluator(object):
             predicted_hap1 = torch.argmax(h1, dim=1).cpu().numpy()
             predicted_hap2 = torch.argmax(h2, dim=1).cpu().numpy()
             if not self.test:
-                loss = min(self.criterion(h1, hap1s) + self.criterion(h2, hap2s), self.criterion(h1, hap2s) + self.criterion(h2, hap1s))
+                loss = min(self.criterion(h1, hap1s) + self.criterion(h2, hap2s),
+                           self.criterion(h2, hap1s) + self.criterion(h1, hap2s))
                 return loss, predicted_hap1, predicted_hap2
             else:
                 return None, predicted_hap1, predicted_hap2

@@ -9,17 +9,26 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+from utils.metrics import ConfusionMatrix
 import os
 
 torch.backends.cudnn.deterministic = True
 
 class Trainer(object):
-    def __init__(self, criterion, optimizer):
+    def __init__(self, criterion, optimizer, n_class):
         self.criterion = criterion
         self.optimizer = optimizer
+        self.metrics = ConfusionMatrix(n_class)
     
     def set_train(self, model):
         model.train()
+        
+    def reset_metrics(self):
+        self.metrics.reset()
+        
+    def get_scores(self):
+        score_train = self.metrics.get_scores()
+        return score_train
         
     def train(self, sample, model):
         snps, hap1s, hap2s = sample['SNP'], sample['hap1'], sample['hap2']
@@ -30,9 +39,6 @@ class Trainer(object):
         
         # get outputs
         h1, h2 = model.forward(snps)
-        print(h1.shape)
-        print(hap1s.shape)
-        exit()
         loss = min(self.criterion(h1, hap1s) + self.criterion(h2, hap2s), self.criterion(h1, hap2s) + self.criterion(h2, hap1s))
         loss.backward()
         self.optimizer.step()
