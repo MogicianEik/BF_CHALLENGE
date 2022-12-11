@@ -9,17 +9,19 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import time
+import yaml
 from tqdm import tqdm
 from models.unet_1d import UNET_1D
-from dataset.snp_feature import KFoldTrainDataLoader, TestDataLoader
+from dataset.snp_feature import KFoldTrainDataLoader, TestDataLoader, PredictDataLoader
 from tensorboardX import SummaryWriter
 from option import Options
 from utils.lr_scheduler import LR_Scheduler
 from utils.trainer import Trainer
-from utils.evaluator import Evaluator
+from utils.evaluator import Evaluator, Predictor
 from torchsummary import summary
 from utils.metrics import ConfusionMatrix
 
@@ -38,13 +40,15 @@ print(task_name)
 ###################################
 evaluation = args.evaluation
 print("evaluation:", evaluation)
+prediction = args.prediction
+print("prediction:", prediction)
 
 ###################################
 print("preparing datasets and dataloaders......")
 batch_size = args.batch_size
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # get train, val, test
-if not evaluation:
+if not evaluation and not prediction:
     dataloaders_train, dataloaders_val, label_encoder_name_mapping = KFoldTrainDataLoader(args.train_file, batch_size, n_class, kfold)
     print("Mapping of Label Encoded Classes", label_encoder_name_mapping, sep="\n")
     
@@ -108,7 +112,7 @@ if not evaluation:
         f_log.close()
 
 # TODO, complete evaluation
-else:
+elif evaluation:
     dataloader_test = TestDataLoader(args.eval_file, args.label_file, batch_size, n_class)
     one_vs_one = ConfusionMatrix(n_class)
     two_vs_two = ConfusionMatrix(n_class)
@@ -139,4 +143,23 @@ else:
     
     for rotation in range(kfold):
         print ('Accuracy of rotation %s: %s'%(rotation, accs[rotation]))
+
+elif prediction:
+    dataloader_pred = PredictDataLoader(args.pred_file, batch_size, n_class)
+    labels = yaml.load(open(args.label_file, "r"), Loader=yaml.FullLoader)
+    print("evaluating unlabeled data, using model: %s" % (model_path + task_name + "_" + args.pred_rotation + ".pth"))
+    model = UNET_1D(n_class,1,128,7,3).cuda()
+    model.load_state_dict(torch.load(model_path + task_name + "_" + args.pred_rotation + ".pth"))
+    model.eval()
+    predictor = Predictor(labels['labels'])
+    pred_results = {'ID':[], 'hap1':[], 'hap2':[]}
+    for i_batch, sample_batched in enumerate(dataloader_pred):
+        sample_id, predicted_hap1, predicted_hap2 = predictor.eval_test(sample_batched, model)
+        pred_results['ID'].append(sample_id)
+        pred_results['hap1'].append(predicted_hap1)
+        pred_results['hap2'].append(predicted_hap2)
+    df = pd.DataFrame.from_dict(pred_results)
+    df.to_csv(args.pred_file.split('.')[0] + '_PredResult.csv', index=False)
+
+        
             

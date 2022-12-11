@@ -10,7 +10,7 @@ from sklearn.model_selection import KFold
 import yaml
 
 class SNPFeature(data.Dataset):
-    """input and label image dataset"""
+    """input and label dataset for training & validation"""
 
     def __init__(self, X, GT1, GT2, n_class, transform = None):
         super(SNPFeature, self).__init__()
@@ -41,6 +41,31 @@ class SNPFeature(data.Dataset):
 transformer = transforms.Compose([
     transforms.ToTensor(),
 ])
+
+class SNPFeature_predict(data.Dataset):
+    """input for predict dataset"""
+    def __init__(self, X, X_id, n_class, transform = None):
+        super(SNPFeature_predict, self).__init__()
+        """
+        Args:
+        X: inputs, SNP features, each feature is a binary code.
+        X_id: ID for each SNP feature
+        transform(callable, optional): Optional transform to be applied on a sample
+        """
+        self.X = X
+        self.id = X_id
+        self.n_class = n_class
+        self.transform = transform
+
+    def __getitem__(self, index):
+        sample = {}
+        sample['SNP'] = torch.tensor(self.X[index], dtype=torch.float)
+        sample['ID'] = self.id[index]
+
+        return sample
+
+    def __len__(self):
+        return len(self.X)
         
 def KFoldTrainDataLoader(train_file, batch_size, n_class, k = 5):
     dataloaders_train = []
@@ -83,3 +108,15 @@ def TestDataLoader(eval_file, label_file, batch_size, n_class):
     dataset_test = SNPFeature(X, y1, y2, n_class, transformer)
     dataloader_test = data.DataLoader(dataset=dataset_test, batch_size=batch_size, num_workers=16, shuffle=True, pin_memory=True)
     return dataloader_test
+    
+def PredictDataLoader(pred_file, batch_size, n_class):
+    df = pd.read_csv(pred_file, sep = '\t')
+    X = df.iloc[:, :-2].values
+    X = np.pad(X, ((0,0),(0,3500-X.shape[1])), 'constant')
+    X = X.reshape(-1,1,X.shape[1])
+    # create a temp pseudo ID for each SNP features
+    ids = list(range(X.shape[0]))
+    X_id = np.array([ids]).T
+    dataset_pred = SNPFeature_predict(X, X_id, n_class, transformer)
+    dataloader_pred = data.DataLoader(dataset=dataset_pred, batch_size=batch_size, num_workers=16, shuffle=True, pin_memory=True)
+    return dataloader_pred
