@@ -10,7 +10,7 @@
 4.  To run the training process, `sh train.sh`, feel free the change the parameters. to check parameters, `python src/main.py -h`
 5.  To run the validation process, `sh test.sh` and check the arguments of that script.
 6.  To run the prediction, `sh predict.sh`
- Markup : 1. A numbered list
-              1. A nested numbered list
-              2. Which is numbered
-          2. Which is numbered
+1. Something
+  1. Something
+  2. Something
+2. Something
