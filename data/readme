@@ -1,1 +1,5 @@
-
+Prediction_data.tbx: deidentified dataset used for haplotype prediction
+Prediction_data_PredResult.csv: results for prediction, a table containing sample IDs and 2 haplotypes for each sample
+Training_data.tbx: labeled 436 individuals from 1KGP used for training
+Validation_data.tbx: labeld 43 individuals provided by Mount Sinai PSP (progressive supranuclear palsy) study group used for validation in the training
+labels.yaml: a map created and used by the NN model for mapping haplotypes and labels
