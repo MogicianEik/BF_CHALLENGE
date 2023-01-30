@@ -47,3 +47,18 @@ class Evaluator(object):
                 return loss, predicted_hap1, predicted_hap2
             else:
                 return None, predicted_hap1, predicted_hap2
+                
+class Predictor(object):
+    def __init__(self, label_dict):
+        inv_map = {v: k for k, v in label_dict.items()}
+        self.label_dict = inv_map
+
+    def eval_test(self, sample, model):
+        with torch.no_grad():
+            snps = sample['SNP']
+            snps = snps.cuda()
+            
+            h1, h2 = model.forward(snps)
+            predicted_hap1 = torch.argmax(h1, dim=1).cpu().numpy()
+            predicted_hap2 = torch.argmax(h2, dim=1).cpu().numpy()
+            return sample['ID'].cpu().numpy()[0][0], self.label_dict[predicted_hap1[0]], self.label_dict[predicted_hap2[0]]

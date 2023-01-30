@@ -1,0 +1,9 @@
+                Match   Total   percentage
+Individuals      20       43       47%         
+Haps (total):    61       86       71%
+H1.*.*           86       86       100%
+H1.1*            57       64       89%
+H1.1.1           36       42       86%
+H1.1.2           9        16       56%
+H1.1.3           0         6       0%
+H1.2.1           15       22       68%
