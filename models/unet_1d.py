@@ -86,8 +86,8 @@ class UNET_1D(nn.Module):
         self.fc = nn.Linear(self.layer_n, self.n_class, bias=True)
         
         # decoder 2 classifier
-        self.fc2 = nn.Linear(self.layer_n * 3500, self.n_class, bias=True)
-        self.relu = nn.ReLU()
+        self.outcov2 = nn.Conv1d(self.layer_n, self.n_class, kernel_size=self.kernel_size, stride=1,padding = 3)
+        self.fc2 = nn.Linear(self.n_class * 3500, self.n_class, bias=True)
         self.softmax = nn.Softmax(dim=1)
     
         
@@ -149,7 +149,8 @@ class UNET_1D(nn.Module):
         up2 = torch.cat([up2,out_0],1)
         up2 = self.cbr_up3(up2)
         
-        out2 = torch.flatten(up2, start_dim=1)
+        out2 = self.outcov2(up2)
+        out2 = torch.flatten(out2, start_dim=1)
         out2 = self.fc2(out2)
         out2 = self.softmax(out2)
        
