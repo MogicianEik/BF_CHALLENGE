@@ -79,7 +79,6 @@ class UNET_1D(nn.Module):
         self.cbr_up2 = conbr_block(int(self.layer_n*5), int(self.layer_n*2), self.kernel_size, 1, 1)
         self.cbr_up3 = conbr_block(int(self.layer_n*3), self.layer_n, self.kernel_size, 1, 1)
         self.upsample = nn.Upsample(scale_factor=5, mode='nearest')
-        self.upsample1 = nn.Upsample(scale_factor=5, mode='nearest')
         
         # decoder 1 classifier
         self.outcov = nn.Conv1d(self.layer_n, self.layer_n, kernel_size=self.kernel_size, stride=1,padding = 3)
@@ -88,6 +87,7 @@ class UNET_1D(nn.Module):
         
         # decoder 2 classifier
         self.fc2 = nn.Linear(self.layer_n * 3500, self.n_class, bias=True)
+        self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)
     
         
@@ -117,7 +117,7 @@ class UNET_1D(nn.Module):
         
         #############Decoder 1####################
         
-        up1 = self.upsample1(x)
+        up1 = self.upsample(x)
         up1 = torch.cat([up1,out_2],1)
         up1 = self.cbr_up1(up1)
         
@@ -137,7 +137,7 @@ class UNET_1D(nn.Module):
         
         #############Decoder 2####################
         
-        up2 = self.upsample1(x)
+        up2 = self.upsample(x)
         up2 = torch.cat([up2,out_2],1)
         up2 = self.cbr_up1(up2)
         
@@ -149,10 +149,9 @@ class UNET_1D(nn.Module):
         up2 = torch.cat([up2,out_0],1)
         up2 = self.cbr_up3(up2)
         
-        out2 = self.outcov(up2)
-        out2 = torch.flatten(out2, start_dim=1)
+        out2 = torch.flatten(up2, start_dim=1)
         out2 = self.fc2(out2)
         out2 = self.softmax(out2)
-        
+       
         
         return out1 , out2
