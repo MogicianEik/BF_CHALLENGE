@@ -5,6 +5,6 @@ python -W ignore src/main.py \
 --model_path "outputs/saved_models/" \
 --log_path "outputs/runs/" \
 --task_name "SV_predict" \
---batch_size 32 \
+--batch_size 44 \
 --lr 1e-4 \
 --num_epochs 30

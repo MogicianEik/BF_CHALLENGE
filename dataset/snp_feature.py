@@ -68,6 +68,12 @@ class SNPFeature_predict(data.Dataset):
         return len(self.X)
         
 def KFoldTrainDataLoader(train_file, batch_size, n_class, k = 5):
+    '''
+    added a haplotype level data split. H1 and H2 data are splited separatedly and merged.
+    Since each patient has two haplotypes, the split uses 1-drop rule. If a patient
+    has one H2 label, it will be assigned to the H2 group.
+    '''
+    
     dataloaders_train = []
     dataloaders_val = []
     # extract inputs and targets
@@ -84,7 +90,16 @@ def KFoldTrainDataLoader(train_file, batch_size, n_class, k = 5):
     label_encoder_name_mapping = dict(zip(label_encoder.classes_,
                                              label_encoder.transform(label_encoder.classes_)))
     kf = KFold(n_splits=k, shuffle=False)
-    for train_index, test_index in kf.split(list(range(len(X)))):
+    H1 = []
+    H2 = []
+    for index in range(len(X)):
+        if gt1[index] > 5 or gt2[index] > 5:
+            H2.append(index)
+        else:
+            H1.append(index)
+    for H1_index, H2_index in zip(kf.split(H1), kf.split(H2)):
+        train_index = list(H1_index[0]) + list(H2_index[0])
+        test_index = list(H1_index[1]) + list(H2_index[1])
         dataset_train = SNPFeature(X[train_index], gt1[train_index], gt2[train_index], n_class, transformer)
         dataloader_train = data.DataLoader(dataset=dataset_train, batch_size=batch_size, num_workers=16, shuffle=True, pin_memory=True)
         dataset_val = SNPFeature(X[test_index], gt1[test_index], gt2[test_index], n_class, transformer)

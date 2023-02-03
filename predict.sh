@@ -7,4 +7,4 @@ python -W ignore src/main.py \
 --task_name "SV_predict" \
 --batch_size 1 \
 --prediction \
---pred_rotation 4
+--pred_rotation 3
