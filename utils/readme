@@ -1,0 +1,4 @@
+evaluator: unit functions used to validate and test models.
+trainer: unit functions used to learn the data.
+metrics: extra and unused loss function or evaluation metrics.
+lr_scheduler: learning rate scheduler. Dynamiclly assign updated learning rates based on the validation progress.
