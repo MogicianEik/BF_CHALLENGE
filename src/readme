@@ -1,0 +1,2 @@
+main: the workflow combining functions for training, validation, test and prediction.
+option: adjustable parameters for the whole workflow
