@@ -25,6 +25,7 @@ from utils.evaluator import Evaluator, Predictor
 from torchsummary import summary
 from utils.metrics import ConfusionMatrix
 
+# single decoder version
 args = Options().parse()
 n_class = args.n_class
 kfold = args.kfold
@@ -58,7 +59,7 @@ if not evaluation and not prediction:
                 
         num_epochs = args.num_epochs
         learning_rate = args.lr
-        model = UNET_1D(n_class,1,128,7,3).cuda() #(input_dim, hidden_layer, kernel_size, depth)
+        model = UNET_1D(n_class,1,128,7,5).cuda() #(input_dim, hidden_layer, kernel_size, depth)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
         scheduler = LR_Scheduler('poly', learning_rate, num_epochs, len(dataloaders_train[rotation]))
         criterion = nn.CrossEntropyLoss()
@@ -89,7 +90,7 @@ if not evaluation and not prediction:
                     print("evaluating...")
 
                     for i_batch, sample_batched in enumerate(dataloaders_val[rotation]):
-                        loss, predicted_hap1, predicted_hap2 = evaluator.eval_test(sample_batched, model)
+                        loss, predicted_gt = evaluator.eval_test(sample_batched, model)
                         val_loss += loss.item()
                         print('[%d/%d] Val loss: %.3f' % ((i_batch + 1)*batch_size, len(dataloaders_val[rotation])*batch_size, val_loss / (i_batch + 1)))
                         
@@ -114,32 +115,22 @@ if not evaluation and not prediction:
 # TODO, complete evaluation
 elif evaluation:
     dataloader_test = TestDataLoader(args.eval_file, args.label_file, batch_size, n_class)
-    one_vs_one = ConfusionMatrix(n_class)
-    two_vs_two = ConfusionMatrix(n_class)
-    one_vs_two = ConfusionMatrix(n_class)
-    two_vs_one = ConfusionMatrix(n_class)
+    CM = ConfusionMatrix(n_class)
     start_time = time.time()
     accs = []
     for rotation in range(kfold):
         print("evaluating models, rotation %s"%rotation)
-        one_vs_one.reset()
-        two_vs_two.reset()
-        one_vs_two.reset()
-        two_vs_one.reset()
-        model = UNET_1D(n_class,1,128,7,3).cuda()
+        CM.reset()
+        model = UNET_1D(n_class,1,128,7,5).cuda()
         model.load_state_dict(torch.load(model_path + task_name + "_%s.pth" % rotation))
         model.eval()
         evaluator = Evaluator(n_class = n_class, test = evaluation)
         for i_batch, sample_batched in enumerate(dataloader_test):
-            _, predicted_hap1, predicted_hap2 = evaluator.eval_test(sample_batched, model)
-            print(predicted_hap1, predicted_hap2, sample_batched['hap1'], sample_batched['hap2'])
-            one_vs_one.update(sample_batched['hap1'].cpu().numpy(), predicted_hap1)
-            two_vs_two.update(sample_batched['hap2'].cpu().numpy(), predicted_hap2)
-            one_vs_two.update(sample_batched['hap1'].cpu().numpy(), predicted_hap2)
-            two_vs_one.update(sample_batched['hap2'].cpu().numpy(), predicted_hap1)
+            _, predicted_gt = evaluator.eval_test(sample_batched, model)
+            print(predicted_gt, sample_batched['GT'])
+            CM.update(sample_batched['GT'].cpu().numpy(), predicted_gt)
         print('=============================================================')
-        accs.append(max((one_vs_one.get_scores()['accuracy'] + two_vs_two.get_scores()['accuracy'])/2,
-                        (two_vs_one.get_scores()['accuracy'] + one_vs_two.get_scores()['accuracy'])/2))
+        accs.append(CM.get_scores()['accuracy'])
     
     for rotation in range(kfold):
         print ('Accuracy of rotation %s: %s'%(rotation, accs[rotation]))
@@ -148,18 +139,17 @@ elif prediction:
     dataloader_pred = PredictDataLoader(args.pred_file, batch_size, n_class)
     labels = yaml.load(open(args.label_file, "r"), Loader=yaml.FullLoader)
     print("evaluating unlabeled data, using model: %s" % (model_path + task_name + "_" + args.pred_rotation + ".pth"))
-    model = UNET_1D(n_class,1,128,7,3).cuda()
+    model = UNET_1D(n_class,1,128,7,5).cuda()
     model.load_state_dict(torch.load(model_path + task_name + "_" + args.pred_rotation + ".pth"))
     model.eval()
     predictor = Predictor(labels['labels'])
-    pred_results = {'ID':[], 'hap1':[], 'hap2':[]}
+    pred_results = {'ID':[], 'Class':[]}
     for i_batch, sample_batched in enumerate(dataloader_pred):
-        sample_id, predicted_hap1, predicted_hap2 = predictor.eval_test(sample_batched, model)
+        sample_id, predicted_gt = predictor.eval_test(sample_batched, model)
         pred_results['ID'].append(sample_id)
-        pred_results['hap1'].append(predicted_hap1)
-        pred_results['hap2'].append(predicted_hap2)
+        pred_results['Class'].append(predicted_gt)
     df = pd.DataFrame.from_dict(pred_results)
-    df.to_csv(args.pred_file.split('.')[0] + '_PredResult.csv', index=False)
+    df.to_csv(args.pred_file.split('.')[0] + 'SD_PredResult.csv', index=False)
 
         
             

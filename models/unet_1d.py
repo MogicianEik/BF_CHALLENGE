@@ -134,25 +134,4 @@ class UNET_1D(nn.Module):
         out1 = out1.view(out1.shape[0], -1)
         out1 = self.fc(out1)
         
-        
-        #############Decoder 2####################
-        
-        up2 = self.upsample(x)
-        up2 = torch.cat([up2,out_2],1)
-        up2 = self.cbr_up1(up2)
-        
-        up2 = self.upsample(up2)
-        up2 = torch.cat([up2,out_1],1)
-        up2 = self.cbr_up2(up2)
-        
-        up2 = self.upsample(up2)
-        up2 = torch.cat([up2,out_0],1)
-        up2 = self.cbr_up3(up2)
-        
-        out2 = self.outcov2(up2)
-        out2 = torch.flatten(out2, start_dim=1)
-        out2 = self.fc2(out2)
-        out2 = self.softmax(out2)
-       
-        
-        return out1 , out2
+        return out1

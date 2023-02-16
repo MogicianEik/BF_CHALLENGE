@@ -17,8 +17,7 @@ class SNPFeature(data.Dataset):
         """
         Args:
         X: inputs, SNP features, each feature is a binary code.
-        GT1: haplotype labels
-        GT2: haplotype labels
+        GT: haplotype combo code, 0 - two copies are both H1B1G1, 1 - only one H1B1G1, 2 - 0 copies
         transform(callable, optional): Optional transform to be applied on a sample
         """
         self.X = X
@@ -30,8 +29,12 @@ class SNPFeature(data.Dataset):
     def __getitem__(self, index):
         sample = {}
         sample['SNP'] = torch.tensor(self.X[index], dtype=torch.float)
-        sample['hap1'] = self.GT1[index]
-        sample['hap2'] = self.GT2[index]
+        if self.GT1[index] + self.GT2[index] == 1:
+            sample['GT'] = 1
+        elif self.GT1[index] + self.GT2[index] > 1:
+            sample['GT'] = 2
+        else:
+            sample['GT'] = 0
 
         return sample
 
