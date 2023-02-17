@@ -14,6 +14,7 @@ import os
 
 torch.backends.cudnn.deterministic = True
 
+# single decoder version, 3 class labels
 class Trainer(object):
     def __init__(self, criterion, optimizer, n_class):
         self.criterion = criterion
@@ -31,15 +32,14 @@ class Trainer(object):
         return score_train
         
     def train(self, sample, model):
-        snps, hap1s, hap2s = sample['SNP'], sample['hap1'], sample['hap2']
+        snps, GTs = sample['SNP'], sample['GT']
         # convert data into cuda
         snps = snps.cuda()
-        hap1s = hap1s.type('torch.LongTensor').cuda()
-        hap2s = hap2s.type('torch.LongTensor').cuda()
+        GTs = GTs.type('torch.LongTensor').cuda()
         
         # get outputs
-        h1, h2 = model.forward(snps)
-        loss = min(self.criterion(h1, hap1s) + self.criterion(h2, hap2s), self.criterion(h1, hap2s) + self.criterion(h2, hap1s))
+        GT = model.forward(snps)
+        loss = self.criterion(GT, GTs)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()

@@ -6,5 +6,5 @@ python -W ignore src/main.py \
 --log_path "outputs/runs/" \
 --task_name "SV_SD_predict_updated" \
 --batch_size 44 \
---lr 1e-5 \
---num_epochs 50
+--lr 1e-4 \
+--num_epochs 20

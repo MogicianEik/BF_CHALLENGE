@@ -29,12 +29,12 @@ class SNPFeature(data.Dataset):
     def __getitem__(self, index):
         sample = {}
         sample['SNP'] = torch.tensor(self.X[index], dtype=torch.float)
-        if self.GT1[index] + self.GT2[index] == 1:
-            sample['GT'] = 1
-        elif self.GT1[index] + self.GT2[index] > 1:
-            sample['GT'] = 2
-        else:
+        if self.GT1[index] == 0 and self.GT2[index] == 0:
             sample['GT'] = 0
+        elif self.GT1[index] == 0 or self.GT2[index] == 0:
+            sample['GT'] = 1
+        else:
+            sample['GT'] = 2
 
         return sample
 

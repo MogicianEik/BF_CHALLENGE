@@ -15,6 +15,7 @@ import os
 
 torch.backends.cudnn.deterministic = True
 
+# single decoder version, 3 class labels
 class Evaluator(object):
     def __init__(self, n_class, criterion = None,test=False):
         self.criterion = criterion
@@ -33,20 +34,16 @@ class Evaluator(object):
             snps = sample['SNP']
             snps = snps.cuda()
             if not self.test:
-                hap1s = sample['hap1']
-                hap2s = sample['hap2']
-                hap1s = hap1s.type('torch.LongTensor').cuda()
-                hap2s = hap2s.type('torch.LongTensor').cuda()
+                GTs = sample['GT']
+                GTs = GTs.type('torch.LongTensor').cuda()
             
-            h1, h2 = model.forward(snps)
-            predicted_hap1 = torch.argmax(h1, dim=1).cpu().numpy()
-            predicted_hap2 = torch.argmax(h2, dim=1).cpu().numpy()
+            gt = model.forward(snps)
+            predicted_gt = torch.argmax(gt, dim=1).cpu().numpy()
             if not self.test:
-                loss = min(self.criterion(h1, hap1s) + self.criterion(h2, hap2s),
-                           self.criterion(h2, hap1s) + self.criterion(h1, hap2s))
-                return loss, predicted_hap1, predicted_hap2
+                loss = self.criterion(gt, GTs)
+                return loss, predicted_gt
             else:
-                return None, predicted_hap1, predicted_hap2
+                return None, predicted_gt
                 
 class Predictor(object):
     def __init__(self, label_dict):
@@ -58,7 +55,6 @@ class Predictor(object):
             snps = sample['SNP']
             snps = snps.cuda()
             
-            h1, h2 = model.forward(snps)
-            predicted_hap1 = torch.argmax(h1, dim=1).cpu().numpy()
-            predicted_hap2 = torch.argmax(h2, dim=1).cpu().numpy()
-            return sample['ID'].cpu().numpy()[0][0], self.label_dict[predicted_hap1[0]], self.label_dict[predicted_hap2[0]]
+            gt = model.forward(snps)
+            predicted_gt = torch.argmax(gt, dim=1).cpu().numpy()[0]
+            return sample['ID'].cpu().numpy()[0][0], predicted_gt
