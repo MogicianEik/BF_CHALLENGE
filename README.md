@@ -10,3 +10,5 @@
 4. To run the training process, `sh train.sh`, feel free the change the parameters. to check parameters, `python src/main.py -h`
 5. To run the validation process, `sh test.sh` and check the arguments of that script.
 6. To run the prediction, `sh predict.sh`
+
+# Directory `deg_analysis` contains scripts and part of data used in the second stage of the project
